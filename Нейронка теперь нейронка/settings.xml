@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<SettingsFields xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <dots>
+    <ArrayOfPoint>
+      <Point>
+        <X>0.17816448881634589</X>
+        <Y>0.433337812008339</Y>
+      </Point>
+      <Point>
+        <X>0.72657705595416056</X>
+        <Y>1</Y>
+      </Point>
+      <Point>
+        <X>0.5706831282398579</X>
+        <Y>1</Y>
+      </Point>
+      <Point>
+        <X>0.13640718675001481</X>
+        <Y>0.4769008724747858</Y>
+      </Point>
+    </ArrayOfPoint>
+  </dots>
+  <updateInterval>5</updateInterval>
+  <timeBeforeFailure>10</timeBeforeFailure>
+  <showThreshImg>true</showThreshImg>
+  <showAdvSettings>true</showAdvSettings>
+  <binarizThreshold>90</binarizThreshold>
+</SettingsFields>elds>narizThreshold>
+  <showThreshImg>false</showThreshImg>
+  <showAdvSettings>false</showAdvSettings>
+  <binarizThreshold>90</binarizThreshold>
+</SettingsFields>
