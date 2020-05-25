@@ -493,7 +493,7 @@ namespace ActionDetector
             if (roi.Height < roi.Width)
             {
                 var roiHeight = DoSmallestLine(new System.Windows.Point[] { dots[0].absoluteCord, dots[3].absoluteCord }, new System.Windows.Point[] { dots[1].absoluteCord, dots[2].absoluteCord });
-                if (rectHeight >= roiHeight && IsSqrtRect(rotRect))
+                if (rectHeight >= roiHeight)
                 {
                     return true;
                 }
@@ -502,30 +502,13 @@ namespace ActionDetector
             else
             {
                 var roiWidth = DoSmallestLine(new System.Windows.Point[] { dots[0].absoluteCord, dots[1].absoluteCord }, new System.Windows.Point[] { dots[2].absoluteCord, dots[3].absoluteCord });
-                if (rectHeight >= roi.Width && IsSqrtRect(rotRect))
+                if (rectHeight >= roi.Width)
                 {
                     return true;
                 }
                 else return false;
             }
-        }
-
-        /// <summary>Функция, проверяющая что найденный контур +- квадратный (примерно габаритов желтого объекта на стане)</summary>
-        /// <param name="rect">  Проверяемый контур</param>
-        /// <returns>
-        ///   <c>true</c> если контур квадратный, иначе - <c>false</c>
-        /// </returns>
-        public bool IsSqrtRect(RotatedRect rect)
-        {
-            var minRect = rect.Points();
-
-            var rectHeight = DoLineLength(minRect[0].X, minRect[0].Y, minRect[1].X, minRect[1].Y);
-            var rectWidth = DoLineLength(minRect[1].X, minRect[1].Y, minRect[2].X, minRect[2].Y);
-
-            if (rectHeight > rectWidth)
-                return rectWidth >= rectHeight / 2;
-            else return rectHeight >= rectWidth / 2;
-        }
+        }      
 
         /// <summary>Находит минимальную по длине линию из двух переданных</summary>
         /// <param name="line1"> Массив точек первой линии</param>
