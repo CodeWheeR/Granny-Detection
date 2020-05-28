@@ -8,13 +8,22 @@ namespace FlexiblePlanes
 {
 	public class Dot
 	{
+		#region Static Fiends and Constants
+
+		#region Public
+
+		public static float R = 8;
+
+		#endregion
+
+		#endregion
+
 		#region Fields
 
 		#region Public
 
 		public Point absoluteCord;
 		public Brush color = Brushes.Red;
-		public static float R = 8;
 		public Point relativeCord;
 
 		#endregion

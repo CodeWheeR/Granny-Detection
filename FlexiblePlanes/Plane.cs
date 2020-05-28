@@ -1,91 +1,76 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using System.Xml.Serialization;
 
 namespace FlexiblePlanes
 {
 	/// <summary>
-	///Класс для работы плоскостей
+	///     Класс для работы плоскостей
 	/// </summary>
 	public class Plane
 	{
+		#region Fields
 
-		public event EventHandler PlaneChanged;
+		#region Public
 
-		/// <summary>
-		/// Массив точек
-		/// </summary>
-		public List<Dot> dots = new List<Dot>();
-		private List<MyLine> lines = new List<MyLine>();
-		/// <summary>
-		/// Полигон
-		/// </summary>
-		private Polygon polygone;
-		public Canvas Canvas { get; }
 		public Dot ChangeDot;
 		public MyLine ChangeLine;
-		private Polygon ChangePolygone;
-		public Brush fillingBrush = new SolidColorBrush(Color.FromArgb(50,150,0,0));
-		public Brush linesBrush = Brushes.Red;
-		Window window;
 
+		/// <summary>
+		///     Массив точек
+		/// </summary>
+		public List<Dot> dots = new List<Dot>();
+
+		public Brush fillingBrush = new SolidColorBrush(Color.FromArgb(50, 150, 0, 0));
+		public Brush linesBrush = Brushes.Red;
+
+		#endregion
+
+		#region Private
+
+		private Polygon ChangePolygone;
+		private readonly List<MyLine> lines = new List<MyLine>();
 		private Point oldMouseCord;
 
-		public Point absoluteToRelative(Point absolute)
-		{
-			absolute.X = (absolute.X - (absolute.X < Canvas.ActualWidth / 2 ? Dot.R / 2 : -Dot.R / 2)) / Canvas.ActualWidth;
-			absolute.Y = (absolute.Y - (absolute.Y < Canvas.ActualHeight / 2 ? Dot.R / 2 : -Dot.R / 2)) / Canvas.ActualHeight;
-			return absolute;
-		}
-		public Point relativeToAbsolute(Point relative)
-		{
-			relative.X = relative.X * Canvas.ActualWidth + (relative.X < 0.5 ? Dot.R / 2 : -Dot.R / 2);
-			relative.Y = relative.Y * Canvas.ActualHeight + (relative.Y < 0.5 ? Dot.R / 2 : -Dot.R / 2);
-			return relative;
-		}
+		/// <summary>
+		///     Полигон
+		/// </summary>
+		private Polygon polygone;
 
-		public Point GetMouseCord()
-		{
-			return Mouse.GetPosition(window);
-		}
+		private readonly Window window;
 
-		public bool inPlane(Point RelativePoint)
-		{
-			double angleSumm = 0;
-			for (int i = 0; i < dots.Count; i++)
-			{
-				Vector v1 = new Vector(dots[i].relativeCord.X - RelativePoint.X, dots[i].relativeCord.Y - RelativePoint.Y);
-				Vector v2 = new Vector(dots[(i + 1) % dots.Count].relativeCord.X - RelativePoint.X, dots[(i + 1) % dots.Count].relativeCord.Y - RelativePoint.Y);
+		#endregion
 
-				angleSumm += Vector.AngleBetween(v1, v2);
-			}
+		#endregion
 
-			if (Math.Abs(Math.Abs(Math.Round(angleSumm)) - 360) < 0.01)
-			{
-				return true;
-			}
-			return false;
-		}
+		#region Properties
+
+		#region Public
+
+		public Canvas Canvas { get; }
+
+		#endregion
+
+		#endregion
+
+		#region .ctor
 
 		public Plane()
 		{
-
 		}
+
 		/// <summary>
-		/// Конструктор
+		///     Конструктор
 		/// </summary>
 		/// <param name="window">Родительское окно</param>
 		public Plane(Canvas canvas, Window window, IEnumerable<Point> points = null)
 		{
 			this.window = window;
-			this.Canvas = canvas;
+			Canvas = canvas;
 
 			ChangeDot = null;
 
@@ -96,102 +81,71 @@ namespace FlexiblePlanes
 			Canvas.MouseMove += MoveMouse;
 
 			if (points == null)
-			{ 
-				dots.Add(new Dot(new Point(0.4, 0.4), this,2, linesBrush));
-				dots.Add(new Dot(new Point(0.6, 0.4), this,2, linesBrush));
-				dots.Add(new Dot(new Point(0.6, 0.6), this,2, linesBrush));
-				dots.Add(new Dot(new Point(0.4, 0.6), this,2, linesBrush));
+			{
+				dots.Add(new Dot(new Point(0.4, 0.4), this, 2, linesBrush));
+				dots.Add(new Dot(new Point(0.6, 0.4), this, 2, linesBrush));
+				dots.Add(new Dot(new Point(0.6, 0.6), this, 2, linesBrush));
+				dots.Add(new Dot(new Point(0.4, 0.6), this, 2, linesBrush));
 			}
 			else
 			{
 				foreach (var i in points)
+				{
 					dots.Add(new Dot(i, this, 2, linesBrush));
+				}
 			}
 
 			foreach (var i in dots)
 			{
 				i.drawPoint();
 			}
+
 			redrawLine();
-		}      
-
-		private void MoveMouse(object sender, MouseEventArgs args)
-		{
-			var point = Mouse.GetPosition(window);
-			if (ChangeDot != null)
-			{
-				
-				double x = point.X;
-				double y = point.Y;
-				ChangeDot.SetAbsoluteCoordinates(new Point(x - Canvas.Margin.Left, y - Canvas.Margin.Top));
-				redrawLine();
-			}
-
-			if(ChangeLine != null)
-			{
-				Vector delta = oldMouseCord - point;
-				ChangeLine.newCord(-delta);
-				redrawLine();
-			}
-
-			if(ChangePolygone != null)
-			{
-				Vector delta = oldMouseCord - point;
-				foreach(var i in dots)
-				{
-					i.AddAbsoluteCoordinates(new Point(-delta.X, -delta.Y));
-				}
-				redrawLine();
-			}
-
-			oldMouseCord = point;
 		}
 
-		private void UpMouse(object sender, MouseEventArgs args)
+		#endregion
+
+		#region Public methods
+
+		public Point absoluteToRelative(Point absolute)
 		{
-			if (ChangeDot != null)
-			{
-				ChangeDot = null;
-			}
-			if (ChangeLine != null)
-			{
-				ChangeLine.MouseLeftBottonUp();
-				ChangeLine = null;
-			}
-			ChangePolygone = null;
+			absolute.X = (absolute.X - (absolute.X < Canvas.ActualWidth / 2 ? Dot.R / 2 : -Dot.R / 2)) / Canvas.ActualWidth;
+			absolute.Y = (absolute.Y - (absolute.Y < Canvas.ActualHeight / 2 ? Dot.R / 2 : -Dot.R / 2)) / Canvas.ActualHeight;
+			return absolute;
 		}
 
-		private void onPolygone(object sender, MouseEventArgs args)
+		public Point relativeToAbsolute(Point relative)
 		{
-			foreach(var i in lines)
-			{
-				i.SetBlack();
-			}
-			foreach (var i in dots)
-			{
-				i.SetBlack();
-			}
+			relative.X = relative.X * Canvas.ActualWidth + (relative.X < 0.5 ? Dot.R / 2 : -Dot.R / 2);
+			relative.Y = relative.Y * Canvas.ActualHeight + (relative.Y < 0.5 ? Dot.R / 2 : -Dot.R / 2);
+			return relative;
 		}
-		private void NotOnPolygone(object sender, MouseEventArgs args)
+
+		public Point GetMouseCord() => Mouse.GetPosition(window);
+
+		public bool inPlane(Point RelativePoint)
 		{
-			foreach (var i in lines)
+			double angleSumm = 0;
+			for (var i = 0; i < dots.Count; i++)
 			{
-				i.SetRed();
+				var v1 = new Vector(dots[i].relativeCord.X - RelativePoint.X, dots[i].relativeCord.Y - RelativePoint.Y);
+				var v2 = new Vector(dots[(i + 1) % dots.Count].relativeCord.X - RelativePoint.X, dots[(i + 1) % dots.Count].relativeCord.Y - RelativePoint.Y);
+
+				angleSumm += Vector.AngleBetween(v1, v2);
 			}
-			foreach (var i in dots)
+
+			if (Math.Abs(Math.Abs(Math.Round(angleSumm)) - 360) < 0.01)
 			{
-				i.SetRed();
+				return true;
 			}
+
+			return false;
 		}
-		private void ClickOnPolygone(object sender, MouseEventArgs args)
-		{
-			  ChangePolygone = polygone;
-		   
-		}
+
 		public void addNewDots(MyLine line)
 		{
-			Dot dot = new Dot(line.GetCenter(), this, 2);
-			int index = dots.IndexOf(line.GetFirstPoint());
+			var dot = new Dot(line.GetCenter(), this, 2);
+			var index = dots.IndexOf(line.GetFirstPoint());
 			dots.Insert(index, dot);
 			dot.drawPoint();
 
@@ -199,6 +153,7 @@ namespace FlexiblePlanes
 			{
 				i.remove();
 			}
+
 			lines.Clear();
 
 			redrawLine();
@@ -212,56 +167,67 @@ namespace FlexiblePlanes
 			{
 				i.remove();
 			}
+
 			lines.Clear();
 			redrawLine();
 		}
-		
+
 		/// <summary>
-		/// Возвращает строку с относительными координатами всех точек, относительно левого верхнего угла
+		///     Возвращает строку с относительными координатами всех точек, относительно левого верхнего угла
 		/// </summary>
 		/// <returns></returns>
 		public string GetCord()
 		{
-			string s = "";
+			var s = "";
 			foreach (var i in dots)
 			{
 				s += $"x = {string.Format("{0:0.00}", i.relativeCord.X)}  y = {string.Format("{0:0.00}", i.relativeCord.Y)} \n";
 			}
+
 			return s;
 		}
+
 		/// <summary>
-		/// Перерисовывает плоскость
+		///     Перерисовывает плоскость
 		/// </summary>
 		public void redrawLine()
 		{
 			if (polygone != null)
+			{
 				Canvas.Children.Remove(polygone);
+			}
+
 			polygone = new Polygon();
 			polygone.Fill = fillingBrush;
-			Canvas.SetZIndex(polygone, 0);
-			PointCollection myPointCollection = new PointCollection();
+			Panel.SetZIndex(polygone, 0);
+			var myPointCollection = new PointCollection();
 			foreach (var i in dots)
 			{
 				myPointCollection.Add(i.absoluteCord);
 			}
+
 			polygone.Points = myPointCollection;
 			polygone.MouseEnter += onPolygone;
 			polygone.MouseLeave += NotOnPolygone;
 			polygone.MouseLeftButtonDown += ClickOnPolygone;
 			polygone.MouseUp += UpMouse;
 			Canvas.Children.Add(polygone);
-			if (lines.Count == 0) 
-			for(int i = 0; i < dots.Count; i++)
+			if (lines.Count == 0)
 			{
-				lines.Add(new MyLine(dots[i], dots[(i + 1) % dots.Count], this,1, linesBrush));                
+				for (var i = 0; i < dots.Count; i++)
+				{
+					lines.Add(new MyLine(dots[i], dots[(i + 1) % dots.Count], this, 1, linesBrush));
+				}
 			}
-			foreach(var i in lines)
+
+			foreach (var i in lines)
 			{
 				i.DrawLine();
 			}
 		}
+
 		/// <summary>
-		/// Изменяет размер плоскость в зависимости от размеров канваса
+		///     Изменяет размер плоскость в зависимости от размеров канваса
 		/// </summary>
 		public void Resize()
 		{
@@ -269,10 +235,12 @@ namespace FlexiblePlanes
 			{
 				i.Resize();
 			}
+
 			redrawLine();
 		}
+
 		/// <summary>
-		/// Удаляет плоскость с канваса
+		///     Удаляет плоскость с канваса
 		/// </summary>
 		public void remove()
 		{
@@ -281,9 +249,10 @@ namespace FlexiblePlanes
 			{
 				i.remove();
 			}
+
 			foreach (var i in lines)
 			{
-			   i.remove();
+				i.remove();
 			}
 		}
 
@@ -292,10 +261,100 @@ namespace FlexiblePlanes
 			this.fillingBrush = fillingBrush;
 			this.linesBrush = linesBrush;
 			foreach (var i in lines)
+			{
 				i.linesBrush = linesBrush;
+			}
+
 			foreach (var i in dots)
+			{
 				i.SetColor(linesBrush);
+			}
+
 			redrawLine();
 		}
+
+		#endregion
+
+		#region Private methods
+
+		private void MoveMouse(object sender, MouseEventArgs args)
+		{
+			var point = Mouse.GetPosition(window);
+			if (ChangeDot != null)
+			{
+				var x = point.X;
+				var y = point.Y;
+				ChangeDot.SetAbsoluteCoordinates(new Point(x - Canvas.Margin.Left, y - Canvas.Margin.Top));
+				redrawLine();
+			}
+
+			if (ChangeLine != null)
+			{
+				var delta = oldMouseCord - point;
+				ChangeLine.newCord(-delta);
+				redrawLine();
+			}
+
+			if (ChangePolygone != null)
+			{
+				var delta = oldMouseCord - point;
+				foreach (var i in dots)
+				{
+					i.AddAbsoluteCoordinates(new Point(-delta.X, -delta.Y));
+				}
+
+				redrawLine();
+			}
+
+			oldMouseCord = point;
+		}
+
+		private void UpMouse(object sender, MouseEventArgs args)
+		{
+			if (ChangeDot != null)
+			{
+				ChangeDot = null;
+			}
+
+			if (ChangeLine != null)
+			{
+				ChangeLine.MouseLeftBottonUp();
+				ChangeLine = null;
+			}
+
+			ChangePolygone = null;
+		}
+
+		private void onPolygone(object sender, MouseEventArgs args)
+		{
+			foreach (var i in lines)
+			{
+				i.SetBlack();
+			}
+
+			foreach (var i in dots)
+			{
+				i.SetBlack();
+			}
+		}
+
+		private void NotOnPolygone(object sender, MouseEventArgs args)
+		{
+			foreach (var i in lines)
+			{
+				i.SetRed();
+			}
+
+			foreach (var i in dots)
+			{
+				i.SetRed();
+			}
+		}
+
+		private void ClickOnPolygone(object sender, MouseEventArgs args) => ChangePolygone = polygone;
+
+		#endregion
+
+		public event EventHandler PlaneChanged;
 	}
 }

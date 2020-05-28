@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "People Detection", "Нейронка теперь нейронка\People Detection.csproj", "{B09545B8-A538-4D7C-ABEF-53D503954FED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "People Detection", "ActionDetector\ActionDetector.csproj", "{B09545B8-A538-4D7C-ABEF-53D503954FED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexiblePlanes", "FlexiblePlanes\FlexiblePlanes.csproj", "{1E547709-D6EB-464F-B343-B7846EC45008}"
 EndProject

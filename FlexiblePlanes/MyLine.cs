@@ -7,24 +7,36 @@ using System.Windows.Shapes;
 namespace FlexiblePlanes
 {
 	/// <summary>
-	/// Для создания ROI
+	///     Для создания ROI
 	/// </summary>
 	public class MyLine
 	{
-		private Dot d1;
-		private Dot d2;
-		private Plane plane;
-		int zIndex = 0;
+		#region Fields
 
-		Line line;
+		#region Public
+
 		public Brush linesBrush;
+
+		#endregion
+
+		#region Private
+
 		private Brush currentColor;
+		private readonly Dot d1;
+		private readonly Dot d2;
+		private Line line;
+		private readonly Plane plane;
+		private readonly int zIndex;
+
+		#endregion
+
+		#endregion
+
+		#region .ctor
 
 		public MyLine()
 		{
-
 		}
-
 
 		public MyLine(Dot dot1, Dot dot2, Plane plane, int zIndex, Brush linesBrush = null)
 		{
@@ -34,15 +46,13 @@ namespace FlexiblePlanes
 			d1 = dot1;
 			d2 = dot2;
 		}
-		public Point GetCenter()
-		{
-		   return new Point((d1.relativeCord.X + d2.relativeCord.X) / 2.0, (d1.relativeCord.Y + d2.relativeCord.Y) / 2.0);
-		}
-		public  Dot GetFirstPoint()
-		{
-			return d2;
-		}
 
+		#endregion
+
+		#region Public methods
+
+		public Point GetCenter() => new Point((d1.relativeCord.X + d2.relativeCord.X) / 2.0, (d1.relativeCord.Y + d2.relativeCord.Y) / 2.0);
+		public Dot GetFirstPoint() => d2;
 
 		public void DrawLine()
 		{
@@ -80,31 +90,22 @@ namespace FlexiblePlanes
 
 		public void MouseRightBottonDown(object sender, MouseEventArgs args)
 		{
-		   line.ContextMenu = new ContextMenu();
-			MenuItem mi4 = new MenuItem();
+			line.ContextMenu = new ContextMenu();
+			var mi4 = new MenuItem();
 			mi4.Header = "Добавить точку";
 			mi4.Click += Mi4_Click;
 			line.ContextMenu.Items.Add(mi4);
 			line.ContextMenu.IsEnabled = true;
-			
 		}
 
-		private void Mi4_Click(object sender, RoutedEventArgs e)
-		{
-			plane.addNewDots(this);
-		}
-		public void MouseLeftBottonDown(object sender, MouseEventArgs args)
-		{
-			 plane.ChangeLine = this;
+		public void MouseLeftBottonDown(object sender, MouseEventArgs args) => plane.ChangeLine = this;
 
-		}
 		public void MouseLeftBottonUp()
 		{
 			SetRed();
 			d1.SetRed();
 			d2.SetRed();
 		}
-
 
 		public void MouseEnter(object sender, MouseEventArgs args)
 		{
@@ -114,8 +115,28 @@ namespace FlexiblePlanes
 				d1.SetBlack();
 				d2.SetBlack();
 			}
-
 		}
+
+		public void SetBlack()
+		{
+			line.Stroke = Brushes.Black;
+			currentColor = Brushes.Black;
+		}
+
+		public void SetRed()
+		{
+			line.Stroke = linesBrush;
+			currentColor = linesBrush;
+		}
+
+		public void remove() => plane.Canvas.Children.Remove(line);
+
+		#endregion
+
+		#region Private methods
+
+		private void Mi4_Click(object sender, RoutedEventArgs e) => plane.addNewDots(this);
+
 		private void MouseLeave(object sender, MouseEventArgs args)
 		{
 			if (plane.ChangeLine != this)
@@ -125,22 +146,7 @@ namespace FlexiblePlanes
 				d2.SetRed();
 			}
 		}
-	   
-		public void  SetBlack()
-		{
-			line.Stroke = Brushes.Black;
-			currentColor = Brushes.Black;
-		}
-		public void SetRed()
-		{
-			line.Stroke = linesBrush;
-			currentColor = linesBrush;
-		}
 
-		public void remove()
-		{
-			plane.Canvas.Children.Remove(line);
-		}
-
+		#endregion
 	}
 }

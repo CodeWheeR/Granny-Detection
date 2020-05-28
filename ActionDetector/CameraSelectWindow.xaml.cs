@@ -1,27 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ActionDetector
 {
 	/// <summary>
-	/// Логика взаимодействия для CameraSelectWindow.xaml
+	///     Логика взаимодействия для CameraSelectWindow.xaml
 	/// </summary>
 	public partial class CameraSelectWindow : Window
 	{
-		string address = "";
-		public bool imShown = false;
+		#region Fields
+
+		#region Public
+
+		public bool imShown;
+
+		#endregion
+
+		#region Private
+
+		private string address = "";
+
+		#endregion
+
+		#endregion
+
+		#region .ctor
 
 		public CameraSelectWindow()
 		{
@@ -31,20 +35,12 @@ namespace ActionDetector
 				var sr = new StreamReader("lastIP");
 				adres.Text = sr.ReadLine();
 				sr.Close();
-
 			}
 		}
 
-		private void Button_Click(object sender, RoutedEventArgs e)
-		{
-			address = "USB";
-			DialogResult = true;
-		}
+		#endregion
 
-		private void Button_Click_1(object sender, RoutedEventArgs e)
-		{
-			Tabs.SelectedIndex = 1;
-		}
+		#region Public methods
 
 		public string GetCam()
 		{
@@ -63,6 +59,18 @@ namespace ActionDetector
 			Show();
 		}
 
+		#endregion
+
+		#region Private methods
+
+		private void Button_Click(object sender, RoutedEventArgs e)
+		{
+			address = "USB";
+			DialogResult = true;
+		}
+
+		private void Button_Click_1(object sender, RoutedEventArgs e) => Tabs.SelectedIndex = 1;
+
 		private void Button_Click_2(object sender, RoutedEventArgs e)
 		{
 			address = adres.Text;
@@ -72,9 +80,8 @@ namespace ActionDetector
 			DialogResult = true;
 		}
 
-		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-		{
-			imShown = false;
-		}
+		private void Window_Closing(object sender, CancelEventArgs e) => imShown = false;
+
+		#endregion
 	}
 }
