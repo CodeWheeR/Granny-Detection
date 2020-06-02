@@ -5,7 +5,7 @@ using OpenCvSharp;
 
 namespace FlexiblePlanes
 {
-	public class FrameExtensions
+	public static class FrameExtensions
 	{
 		#region Public methods
 
@@ -101,13 +101,6 @@ namespace FlexiblePlanes
 		}
 
 		public static float CheckDot(float x, float y, float[] q) => q[0] * x + q[1] * y + q[2];
-
-		public static double CalcCompactness(IEnumerable<Point> contour)
-		{
-			var S = Cv2.ContourArea(contour);
-			var P = Cv2.ArcLength(contour, true);
-			return Math.Pow(P, 2) / S;
-		}
 
 		#endregion
 

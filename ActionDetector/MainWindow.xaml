@@ -7,8 +7,8 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
 	Title="Обнаружение движения"
-	Width="930"
-	Height="560"
+	Width="1000"
+	Height="600"
 	MinWidth="930"
 	MinHeight="560"
 	Closing="Window_Closing"
@@ -124,14 +124,40 @@
 					Margin="0,5,0,5"
 					HorizontalAlignment="Center"
 					Content="Показывать Threshold" />
-				<Label x:Name="binarizationLabel" Content="Порог бинаризации" />
+				<DockPanel Margin="0,0,5,0">
+					<Label Content="Порог бинаризации:" />
+					<TextBox
+						VerticalAlignment="Center"
+						Text="{Binding ElementName=binarizationSlider, Path=Value, StringFormat=N0}" />
+				</DockPanel>
 				<Slider
 					x:Name="binarizationSlider"
 					Margin="-1,0,1,0"
-					Maximum="300"
+					IsSnapToTickEnabled="True"
+					Maximum="255"
 					Minimum="20"
-					ValueChanged="binarizationSlider_ValueChanged"
+					TickFrequency="1"
 					Value="90" />
+				<DockPanel Margin="0,0,5,0">
+					<Label Content="Порог обнаружения: " />
+					<Label
+						Padding="0"
+						VerticalAlignment="Center"
+						Content="px"
+						DockPanel.Dock="Right" />
+					<TextBox
+						Margin="0,0,5,0"
+						VerticalAlignment="Center"
+						Text="{Binding ElementName=detectionSlider, Path=Value, StringFormat=N0}" />
+				</DockPanel>
+				<Slider
+					x:Name="detectionSlider"
+					Margin="-1,0,1,0"
+					IsSnapToTickEnabled="True"
+					Maximum="2000"
+					Minimum="0"
+					TickFrequency="20"
+					Value="800" />
 			</StackPanel>
 
 		</StackPanel>

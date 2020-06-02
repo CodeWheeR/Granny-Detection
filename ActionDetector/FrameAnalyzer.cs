@@ -27,6 +27,10 @@ namespace ActionDetector
 
 		///<summary>Нижняя граница трешхолда</summary>
 		private int binaryEdge;
+		/// <summary>
+		/// Порог детектирования объекта (в % от площади кадра)
+		/// </summary>
+		private double detectionEdge;
 
 		private readonly bool cameraMode;
 		private DateTime curFailure; //время текущего простоя
@@ -183,6 +187,8 @@ namespace ActionDetector
 				Extensions.BeginInvoke(() =>
 				{
 					binaryEdge = (int) mw.binarizationSlider.Value;
+					detectionEdge = (int)mw.detectionSlider.Value;
+
 					if (int.TryParse(mw.WaitingTimeEdge.Text, out var a))
 					{
 						waitingEdge = a;
@@ -360,10 +366,10 @@ namespace ActionDetector
 		/// <param name="workTime">Суммарное время работы стана</param>
 		/// <param name="failureTime">Суммарное время простоя стана</param>
 		/// <returns>Кортеж со значениями времени работы и простоя в процентах от всего времени работы</returns>
-		public (double workT, double failT) /*double[]*/ TimeCount(double workTime, double failureTime)
+		public (double workT, double failT) TimeCount(double workTime, double failureTime)
 		{
 			var totalTime = workTime + failureTime;
-			if (totalTime != 0)
+			if (Math.Abs(totalTime) > 0.001) //Fix floating point comparison
 			{
 				workTime /= totalTime / 100;
 				failureTime /= totalTime / 100;
@@ -470,64 +476,104 @@ namespace ActionDetector
 				var tmpWithCont = tmp.Clone();
 				tmp.Dispose();
 
-				//поиск контуров на фрейме
-				var contours = ins.FindContoursAsArray(RetrievalModes.External, ContourApproximationModes.ApproxSimple).Where(x => x.Count() > 150);
-
-				var count = contours.Count();
-
-				for (var i = 0; i < count; i++)
+				if (ins.CountNonZero() > detectionEdge)
 				{
-					//построение повёрнутого прямоугольника вокруг пятна
-					var rotRect = Cv2.MinAreaRect(contours.ElementAt(i));
+					mask.Dispose();
+					// остановка времени отсчёта отсутствия бабки  
 
-					if (GrannyDetect(contours.ElementAt(i), ref ins, plane.dots))
+					if (failure)
 					{
-						mask.Dispose();
-						// остановка времени отсчёта отсутствия бабки  
+						failureTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
+						failure = false;
 
-						if (failure)
+						Extensions.BeginInvoke(() =>
 						{
-							failureTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
-							failure = false;
+							mw.txtBlockAlarm.Visibility = Visibility.Hidden;
+							WriteStateLogs($"Конец простоя длительностью {Math.Round(DateTime.Now.Subtract(curFailure).TotalMinutes, 2)} мин.", logName);
 
-							Extensions.BeginInvoke(() =>
-							{
-								mw.txtBlockAlarm.Visibility = Visibility.Hidden;
-								WriteStateLogs($"Конец простоя длительностью {Math.Round(DateTime.Now.Subtract(curFailure).TotalMinutes, 2)} мин.", logName);
-
-								SaveImg(curFailure + DateTime.Now.Subtract(curFailure), curFrame, true);
-								WriteStateLogsInDB(); //Для записи в БД
-							});
-						}
-						else
-						{
-							workTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
-						}
-
-						time = DateTime.Now;
-
-						grannyInTheROI = true;
-
-						var rect = ToRect(rotRect);
-						tmpWithCont.Rectangle(rect, new Scalar(0, 255, 0), 3);
-						break;
+							SaveImg(curFailure + DateTime.Now.Subtract(curFailure), curFrame, true);
+							WriteStateLogsInDB(); //Для записи в БД
+						});
 					}
-
-					if (grannyInTheROI)
+					else
 					{
 						workTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
-						time = DateTime.Now;
-						grannyInTheROI = false;
 					}
+
+					time = DateTime.Now;
+
+					grannyInTheROI = true;
+
+					//var rect = ToRect(rotRect);
+					//tmpWithCont.Rectangle(rect, new Scalar(0, 255, 0), 3);
 				}
 
-				var DetectTMP = tmpWithCont.ToImage();
-				DetectTMP.Freeze();
+				else if (grannyInTheROI)
+				{
+					workTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
+					time = DateTime.Now;
+					grannyInTheROI = false;
+				}
+
+				//поиск контуров на фрейме
+				//var contours = ins.FindContoursAsArray(RetrievalModes.External, ContourApproximationModes.ApproxSimple).Where(x => x.Count() > detectionEdge);
+
+				//var count = contours.Count();
+
+				//for (var i = 0; i < count; i++)
+				//{
+				//	//построение повёрнутого прямоугольника вокруг пятна
+				//	//var rotRect = Cv2.MinAreaRect(contours.ElementAt(i));
+
+				//	if (GrannyDetect(contours.ElementAt(i), ref ins, plane.dots))
+				//	{
+				//		mask.Dispose();
+				//		// остановка времени отсчёта отсутствия бабки  
+
+				//		if (failure)
+				//		{
+				//			failureTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
+				//			failure = false;
+
+				//			Extensions.BeginInvoke(() =>
+				//			{
+				//				mw.txtBlockAlarm.Visibility = Visibility.Hidden;
+				//				WriteStateLogs($"Конец простоя длительностью {Math.Round(DateTime.Now.Subtract(curFailure).TotalMinutes, 2)} мин.", logName);
+
+				//				SaveImg(curFailure + DateTime.Now.Subtract(curFailure), curFrame, true);
+				//				WriteStateLogsInDB(); //Для записи в БД
+				//			});
+				//		}
+				//		else
+				//		{
+				//			workTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
+				//		}
+
+				//		time = DateTime.Now;
+
+				//		grannyInTheROI = true;
+
+				//		//var rect = ToRect(rotRect);
+				//		//tmpWithCont.Rectangle(rect, new Scalar(0, 255, 0), 3);
+				//		break;
+				//	}
+
+				//	if (grannyInTheROI)
+				//	{
+				//		workTimeMin += DateTime.Now.Subtract(time).TotalMinutes;
+				//		time = DateTime.Now;
+				//		grannyInTheROI = false;
+				//	}
+				//}
+
+				var detectTmp = tmpWithCont.ToImage();
+				tmpWithCont.Dispose();
+				detectTmp.Freeze();
 
 				//показ трешхолднутого изображения, если понадобится
 				Extensions.BeginInvoke(() =>
 				{
-					if ((bool) mw.checkThresh.IsChecked)
+					if (mw.checkThresh.IsChecked == true)
 					{
 						Cv2.ImShow("Threshold", ins.Clone());
 					}
@@ -536,7 +582,7 @@ namespace ActionDetector
 						Cv2.DestroyWindow("Threshold");
 					}
 
-					mw.myLittleImage.Source = DetectTMP;
+					mw.myLittleImage.Source = detectTmp;
 				});
 
 				lastTime = DateTime.Now;
@@ -546,9 +592,8 @@ namespace ActionDetector
 			}
 			catch
 			{
-			}
 
-			;
+			}
 		}
 
 		/// <summary>Создание маски для отсечения помех</summary>
@@ -655,7 +700,7 @@ namespace ActionDetector
 
 			if (roi.Height < roi.Width)
 			{
-				var roiHeight = DoSmallestLine(new[] {dots[0].absoluteCord, dots[3].absoluteCord}, new[] {dots[1].absoluteCord, dots[2].absoluteCord});
+				var roiHeight = DoSmallestLine(new[] { dots[0].absoluteCord, dots[3].absoluteCord }, new[] { dots[1].absoluteCord, dots[2].absoluteCord });
 				if (rectHeight >= roiHeight)
 				{
 					return true;
@@ -664,7 +709,7 @@ namespace ActionDetector
 				return false;
 			}
 
-			var roiWidth = DoSmallestLine(new[] {dots[0].absoluteCord, dots[1].absoluteCord}, new[] {dots[2].absoluteCord, dots[3].absoluteCord});
+			var roiWidth = DoSmallestLine(new[] { dots[0].absoluteCord, dots[1].absoluteCord }, new[] { dots[2].absoluteCord, dots[3].absoluteCord });
 			if (rectHeight >= roi.Width)
 			{
 				return true;

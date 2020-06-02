@@ -145,7 +145,14 @@ namespace ActionDetector
 					await Task.Delay(500);
 					Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
 					{
-						ReadSettings(true);
+						try
+						{
+							SilentReadSettings();
+						}
+						catch (IOException exception)
+						{
+							MessageBox.Show($"Не удалось загрузить сохраненные настройки приложения {Environment.NewLine}Файл: {Path.GetFileName(exception.Source)}");
+						}
 					}));
 				});
 			}
@@ -440,38 +447,24 @@ namespace ActionDetector
 			Process.GetCurrentProcess().Close();
 		}
 
-		/// <summary>
-		///     Установка кистей и линий для плоскостей planeList
-		/// </summary>
-		private void SetZoneMode()
-		{
-			if (zoneMode == ZoneMode.Forbidding_zone)
-			{
-				foreach (var i in planeList)
-				{
-					i.SetBrushes(forbidFillingBrush, forbidLinesBrush);
-				}
-			}
-			else
-			{
-				foreach (var i in planeList)
-				{
-					i.SetBrushes(allowFillingBrush, allowLinesBrush);
-				}
-			}
-		}
-
 		/// <summary>  Обработка нажатия кнопки "Сохранение настроек"</summary>
-		private void btnDESerial_Click(object sender, RoutedEventArgs e) => ReadSettings();
+		private void btnDESerial_Click(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				ReadSettings();
+			}
+			catch (IOException exception)
+			{
+				MessageBox.Show("Не удалось прочитать файл настроек " + exception.Source);
+			}
+
+		}
 
 		/// <summary>  Обработка нажатия кнопки "Восстановление настроек"</summary>
 		private void btnSerial_Click(object sender, RoutedEventArgs e) => SaveSettings();
 
-		/// <summary>Обрабатывает событие ValueChanged элемента управления binarizationSlider.</summary>
-		private void binarizationSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => binarizationLabel.Content = "Порог бинаризации: " + (int) binarizationSlider.Value;
-
 		/// <summary>Обрабатывает событие Unchecked элемента управления CheckThresh.</summary>
-		/// >
 		private void CheckThresh_Unchecked(object sender, RoutedEventArgs e) => CheckThreshISUnchecked = true;
 
 		/// <summary>Обрабатывает событие Checked элемента управления CheckSuperOptions.</summary>
@@ -489,87 +482,34 @@ namespace ActionDetector
 		}
 
 		/// <summary>
-		///     Восстановление настроек
+		/// Чтение настроек
 		/// </summary>
-		private void ReadSettings(bool silent = false)
+		private void ReadSettings()
 		{
-			try
-			{
-				settFields = !silent
-					? settingsSaver.ReadSettings(settFields)
-					: settingsSaver.SilentReadSettings();
-			}
-			catch (IOException exception)
-			{
-				MessageBox.Show("Не удалось прочитать файл настроек " + exception.Source);
-				return;
-			}
-
-			txtUpdatePeriod.Text = settFields.updateInterval.ToString();
-			WaitingTimeEdge.Text = settFields.timeBeforeFailure.ToString();
-			binarizationSlider.Value = settFields.binarizThreshold;
-
-			planeList.ForEach(x => x.remove());
-			planeList.Clear();
-			foreach (var i in settFields.dots)
-			{
-				planeList.Add(new Plane(myCanvas, this, i));
-			}
-
-			planeCountLabel.Content = "Зон обнаружения: " + planeList.Count;
-
-			if (settFields.showThreshImg)
-			{
-				checkThresh.IsChecked = true;
-			}
-			else
-			{
-				checkThresh.IsChecked = false;
-			}
-
-			if (settFields.showAdvSettings)
-			{
-				checkSuperOptions.IsChecked = true;
-			}
-			else
-			{
-				checkSuperOptions.IsChecked = false;
-			}
+			settFields = settingsSaver.ReadSettings(settFields);
+			SetSettingsToUI();
 		}
 
 		/// <summary>
-		///     Сохранение настроек
-		///     (по нажатию кнопки)
+		/// Восстановление настроек
+		/// </summary>
+		private void SilentReadSettings()
+		{
+			settFields = settingsSaver.SilentReadSettings();
+			SetSettingsToUI();
+		}
+
+		/// <summary>
+		///  Сохранение настроек
+		///  (по нажатию кнопки)
 		/// </summary>
 		private void SaveSettings()
 		{
-			settFields.updateInterval = Convert.ToInt32(txtUpdatePeriod.Text);
-			settFields.timeBeforeFailure = Convert.ToInt32(WaitingTimeEdge.Text);
-			settFields.binarizThreshold = binarizationSlider.Value;
-
-			if (checkThresh.IsChecked == true)
-			{
-				settFields.showThreshImg = true;
-			}
-			else
-			{
-				settFields.showThreshImg = false;
-			}
-
-			if (checkSuperOptions.IsChecked == true)
-			{
-				settFields.showAdvSettings = true;
-			}
-			else
-			{
-				settFields.showAdvSettings = false;
-			}
+			GetSettingsFromUI();
 
 			var fd = new SaveFileDialog();
 			fd.FileName = "settings";
 			fd.DefaultExt = ".xml";
-
-			settFields.dots = planeList.Select(plane => plane.dots.Select(x => x.relativeCord).ToArray()).ToList();
 
 			var result = fd.ShowDialog();
 			if (result == true)
@@ -579,10 +519,46 @@ namespace ActionDetector
 			}
 		}
 
+
+		/// <summary>
+		/// Выполняет фоновое сохранение настроек.
+		/// </summary>
 		private void SilentSaveSettings()
 		{
-			settFields.dots = planeList.Select(plane => plane.dots.Select(x => x.relativeCord).ToArray()).ToList();
+			GetSettingsFromUI();
 			settingsSaver.WriteSettings(settFields);
+		}
+
+		/// <summary>
+		///  Устанавливает текущие настройки в UI
+		/// </summary>
+		private void SetSettingsToUI()
+		{
+			txtUpdatePeriod.Text = settFields.updateInterval.ToString();
+			WaitingTimeEdge.Text = settFields.timeBeforeFailure.ToString();
+			binarizationSlider.Value = settFields.binarizThreshold;
+			detectionSlider.Value = settFields.detectionEdge;
+
+			planeList.ForEach(x => x.remove());
+			planeList.Clear();
+			foreach (var i in settFields.dots)
+			{
+				planeList.Add(new Plane(myCanvas, this, i));
+			}
+
+			planeCountLabel.Content = "Зон обнаружения: " + planeList.Count;
+		}
+
+		/// <summary>
+		/// Обновляет сохраненные значения настроек в соответствии с параметрами на UI.
+		/// </summary>
+		private void GetSettingsFromUI()
+		{
+			settFields.updateInterval = Convert.ToInt32(txtUpdatePeriod.Text);
+			settFields.timeBeforeFailure = Convert.ToInt32(WaitingTimeEdge.Text);
+			settFields.binarizThreshold = binarizationSlider.Value;
+			settFields.detectionEdge = detectionSlider.Value;
+			settFields.dots = planeList.Select(plane => plane.dots.Select(x => x.relativeCord).ToArray()).ToList();
 		}
 
 		#endregion

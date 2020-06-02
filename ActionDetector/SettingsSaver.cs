@@ -30,7 +30,7 @@ namespace ActionDetector
 		{
 			var ser = new XmlSerializer(typeof(SettingsFields));
 
-			using (var writer = File.OpenWrite(path ?? settingsLocation))
+			using (var writer = File.Create(path ?? settingsLocation))
 			{
 				ser.Serialize(writer, settFields);
 			}
