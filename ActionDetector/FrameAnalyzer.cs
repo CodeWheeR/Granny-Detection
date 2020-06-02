@@ -97,7 +97,7 @@ namespace ActionDetector
 			lastTime = DateTime.Now;
 			cameraMode = camM;
 
-			logName = $@"{DateTime.Now.ToShortDateString()}_{DateTime.Now.ToLongTimeString()}.txt".Replace(":", "_");
+			logName = $@"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}.txt".Replace(":", ".");
 
 			WriteStateLogs("Начало работы", logName);
 			WriteStateLogsInDB(); //Для записи в БД
@@ -385,20 +385,21 @@ namespace ActionDetector
 		}
 
 		/// <summary>
-		///     Записывает сообщение по пути Logs_State\[дата время начала работы програмы].txt в формате [дата время] сообщение
+		/// Записывает сообщение по пути Записи о простоях\[дата время начала работы програмы].txt в формате [дата время] сообщение
 		/// </summary>
 		/// <param name="state">Сообщение</param>
 		/// <param name="logName\">Имя файла лога</param>
 		public static void WriteStateLogs(string state, string logName)
 		{
-			if (!Directory.Exists(@"Logs_State"))
+			var dirName = "Записи о простоях";
+			if (!Directory.Exists(dirName))
 			{
-				Directory.CreateDirectory(@"Logs_State");
+				Directory.CreateDirectory(dirName);
 			}
 
 			state = $"[{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}]" + state;
 
-			var sw = new StreamWriter($@"Logs_State\{logName}", true);
+			var sw = new StreamWriter(dirName + $@"\{logName}", true);
 			sw.WriteLine(state);
 			sw.Close();
 		}
