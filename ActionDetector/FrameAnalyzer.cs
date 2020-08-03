@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -143,6 +145,13 @@ namespace ActionDetector
 								   (int) (plane.dots[index2].relativeCord.Y * frameSize.Height - tmprect.Y));
 			}
 
+			var newDots = plane.dots.Select(x =>
+												new OpenCvSharp.Point(
+													x.relativeCord.X * frameSize.Width - tmprect.X,
+													x.relativeCord.Y * frameSize.Height - tmprect.Y
+												)
+			);
+
 			//Время для отслеживания простоя
 			var time = DateTime.Now;
 			//время для вывода информации о простое и работе в процентах
@@ -162,6 +171,17 @@ namespace ActionDetector
 			}
 
 			videoStream.Read(curFrame);
+
+			//var polyMask = Mat.Zeros(curFrame.Size(), MatType.CV_8UC1).ToMat();
+			//Cv2.FillPoly(polyMask, new List<IEnumerable<OpenCvSharp.Point>>(){
+			//	plane.dots.Select(x => 
+			//						  new OpenCvSharp.Point(
+			//							  x.relativeCord.X * curFrame.Width, 
+			//							  x.relativeCord.Y * curFrame.Height
+			//							  ) 
+			//		)}, Scalar.White);
+
+			//new Action(() => Cv2.ImShow("poly", polyMask)).MakeActInMainThread();
 
 			timer = new Timer(state =>
 			{
@@ -261,7 +281,7 @@ namespace ActionDetector
 					{
 						try
 						{
-							Task.Run(() => Algorhitm(ref curRoi, ref time, lines, ref grannyInTheROI, ref failure));
+							Task.Run(() => Algorhitm(ref curRoi, ref time, lines, newDots, ref grannyInTheROI, ref failure));
 						}
 						catch
 						{
@@ -456,30 +476,50 @@ namespace ActionDetector
 		/// <param name="lines">  Линии ROI</param>
 		/// <param name="grannyInTheROI">Флаг наличия жёлтого обьекта на стане в ROI</param>
 		/// <param name="failure">  Флаг наличия простоя</param>
-		private void Algorhitm(ref Mat curRoi, ref DateTime time, float[][] lines, ref bool grannyInTheROI, ref bool failure)
+		private void Algorhitm(ref Mat curRoi, ref DateTime time, float[][] lines, IEnumerable<OpenCvSharp.Point> newDots, ref bool grannyInTheROI, ref bool failure)
 		{
 			try
 			{
-				var tmp = new Mat();
+				//var tmp = new Mat();
 				//вычитаем из предыдущего кадра текущий 
-				Cv2.Subtract(curRoi, lastFrame, tmp);
+				//Cv2.Subtract(curRoi, lastFrame, tmp);
+
+				//tmp = curRoi.Clone();
 
 				//Извлечение канала для улучшения детектинга бабки 
-				var ins = tmp.CvtColor(ColorConversionCodes.BGR2GRAY);
+				//var ins = tmp.CvtColor(ColorConversionCodes.BGR2GRAY);
 
-				Cv2.Threshold(ins, ins, binaryEdge, 255, ThresholdTypes.Binary); // binaryEdge - С формы бегунок
+				var ins = Mat.Zeros(curRoi.Size(), MatType.CV_8UC1).ToMat();
+				var tmpins = Mat.Zeros(curRoi.Size(), MatType.CV_8UC1).ToMat();
+
+				//Cv2.Threshold(ins, ins, binaryEdge, 255, ThresholdTypes.Binary); // binaryEdge - С формы бегунок
+				Cv2.InRange(curRoi, new Scalar(120,180,200), new Scalar(200, 255, 255), tmpins);
+
+				//new Action(() => Cv2.ImShow("Frame", ins)).MakeActInMainThread();
 
 				//Обрезание ROI по маске
-				var mask = CreateMask(ref tmp, lines);
-				Cv2.BitwiseAnd(ins, mask, ins);
+				//var mask = CreateMask(ref tmp, lines);
+
+				var polyMask = Mat.Zeros(curRoi.Size(), MatType.CV_8UC1).ToMat();
+				Cv2.FillPoly(polyMask, new List<IEnumerable<OpenCvSharp.Point>>(){ newDots}, Scalar.White);
+
+				Cv2.BitwiseAnd(tmpins, polyMask, tmpins);
+
+				var cnt = tmpins.FindContoursAsArray(RetrievalModes.External, ContourApproximationModes.ApproxNone).Where(x => x.Count() > 80).ToArray();
+				for (int i = 0; i < cnt.Count(); i++)
+				{
+					Cv2.DrawContours(ins, cnt, i, Scalar.White, -1);
+				}
+
+				//ins = tmpins;
 
 				//нужен исключительно для демонстрации нарисованного контура выделения бабки, в решении не используется
-				var tmpWithCont = tmp.Clone();
-				tmp.Dispose();
+				//var tmpWithCont = curRoi.Clone();
+				//tmp.Dispose();
 
 				if (ins.CountNonZero() > detectionEdge)
 				{
-					mask.Dispose();
+					polyMask.Dispose();
 					// остановка времени отсчёта отсутствия бабки  
 
 					if (failure)
@@ -567,9 +607,9 @@ namespace ActionDetector
 				//	}
 				//}
 
-				var detectTmp = tmpWithCont.ToImage();
-				tmpWithCont.Dispose();
-				detectTmp.Freeze();
+				//var detectTmp = tmpWithCont.ToImage();
+				//tmpWithCont.Dispose();
+				//detectTmp.Freeze();
 
 				//показ трешхолднутого изображения, если понадобится
 				Extensions.BeginInvoke(() =>
@@ -583,7 +623,7 @@ namespace ActionDetector
 						Cv2.DestroyWindow("Threshold");
 					}
 
-					mw.myLittleImage.Source = detectTmp;
+					//mw.myLittleImage.Source = detectTmp;
 				});
 
 				lastTime = DateTime.Now;
@@ -591,7 +631,7 @@ namespace ActionDetector
 				// Делаем предыдущий кадр равным текущему
 				lastFrame = curRoi.Clone();
 			}
-			catch
+			catch(Exception e)
 			{
 
 			}
